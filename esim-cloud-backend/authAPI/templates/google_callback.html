@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redirecting to the destination...</title>
     <script>
+        {% if error %}
+        // OAuth flow failed — clear any stale token so the app does not
+        // attempt to authenticate with it, then send the user to login.
+        window.localStorage.removeItem('esim_token');
+        window.open('{{ url }}', '_self');
+        {% else %}
         window.localStorage.setItem('esim_token', '{{ token }}');
         var redirect_to = window.localStorage.getItem('ard_redurl');
         if (redirect_to) {
@@ -14,6 +20,7 @@
         } else {
             window.open('{{url}}', '_self')
         }
+        {% endif %}
     </script>
 </head>
 <body></body>
