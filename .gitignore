@@ -14,3 +14,5 @@ symbol_svgs
 postgres_data
 file_storage
 node_modules
+minikube-linux-amd64
+kubectl
