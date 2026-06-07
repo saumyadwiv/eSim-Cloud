@@ -16,10 +16,28 @@ jobs:
       run: |
         docker build -t esim-simulation-engine simulation-engine/
 
-    - name: Run Test Simulation
-        # Using RC.cir from backend helpers as a stable test case
+    - name: Run and Verify Test Simulation
       run: |
+        echo "===================================================="
+        echo "  TESTING STANDALONE SIMULATION ENGINE"
+        echo "===================================================="
+        echo "Test Case: RC Filter Circuit (RC.cir)"
+        echo "Description: Piping netlist to Docker, running NGSPICE, and parsing results."
+        echo "----------------------------------------------------"
+        
         OUTPUT=$(cat esim-cloud-backend/simulationAPI/helpers/sample_files/RC.cir | docker run -i esim-simulation-engine)
-        echo "Simulation Output: $OUTPUT"
-        # Verify that the output contains the expected JSON key
-        echo "$OUTPUT" | grep "total_number_of_tables"
+        
+        if echo "$OUTPUT" | grep -q "total_number_of_tables"; then
+          echo "✅ Simulation Successful!"
+          echo ""
+          echo "High-level Result Summary:"
+          echo "$OUTPUT" | jq -r '.data[] | " - Table found with labels: [\(.labels | join(", "))] | Data points: \(.x | length)"'
+          echo ""
+          echo "Detailed JSON Output (Pretty Printed):"
+          echo "$OUTPUT" | jq .
+        else
+          echo "❌ Simulation Failed or Output Malformed"
+          echo "Raw Output: $OUTPUT"
+          exit 1
+        fi
+        echo "===================================================="
