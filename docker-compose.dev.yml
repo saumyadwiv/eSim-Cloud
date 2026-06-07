@@ -1,4 +1,4 @@
-version: '3'
+
 services:
 
   nginx:
@@ -21,7 +21,7 @@ services:
     image: "docker.pkg.github.com/frg-fossee/esim-cloud/eda-frontend:dev"
     build: ./eda-frontend/
     command: >
-      sh -c "npm install &&
+      sh -c "npm install --no-audit &&
              npm start"
     ports:
       - "3000:3000"
@@ -41,7 +41,7 @@ services:
     image: "docker.pkg.github.com/frg-fossee/esim-cloud/arduino-frontend:dev"
     build: ./ArduinoFrontend/
     command: >
-      sh -c "npm install &&
+      sh -c "npm install --no-audit &&
              npm start"
 
     ports:
@@ -117,7 +117,7 @@ services:
   #     - ./mysql_data:/var/lib/mysql
 
   db:
-    image: postgres
+    image: postgres:13
     volumes:
       - ./postgres_data:/var/lib/postgresql/data/
     env_file:
