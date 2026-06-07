@@ -1,0 +1,25 @@
+name: Simulation Engine Test
+
+on:
+  push:
+    paths: [ 'simulation-engine/**' ]
+  pull_request:
+    paths: [ 'simulation-engine/**' ]
+
+jobs:
+  test-simulation:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build Simulation Engine Image
+      run: |
+        docker build -t esim-simulation-engine simulation-engine/
+
+    - name: Run Test Simulation
+        # Using RC.cir from backend helpers as a stable test case
+      run: |
+        OUTPUT=$(cat esim-cloud-backend/simulationAPI/helpers/sample_files/RC.cir | docker run -i esim-simulation-engine)
+        echo "Simulation Output: $OUTPUT"
+        # Verify that the output contains the expected JSON key
+        echo "$OUTPUT" | grep "total_number_of_tables"
