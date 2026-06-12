@@ -9,7 +9,7 @@ redis_client = redis.Redis(
     decode_responses=True
 )
 
-SESSION_TTL = 1800  # 30 minutes in seconds
+SESSION_TTL = 100 # 30 minutes in seconds
 
 
 def save_session(user_id: str, pod_name: str, namespace: str):
@@ -67,3 +67,17 @@ def refresh_session(user_id: str):
     Called every time user does something in simulation.
     """
     redis_client.expire(f"session:{user_id}", SESSION_TTL)
+# 🆕 NEW: Expired sessions dhundhna — Redis TTL expire ho gayi lekin pod abhi bhi chal raha hai
+def get_expired_pod_names():
+    """
+    Redis mein jo sessions nahi hain lekin pods chal rahe hain —
+    unke pod names return karo taaki cleanup kar sake.
+    """
+    active_keys = redis_client.keys("session:*")
+    active_pod_names = set()
+    for key in active_keys:
+        data = redis_client.get(key)
+        if data:
+            session = json.loads(data)
+            active_pod_names.add(session["pod_name"])
+    return active_pod_names  # cleanup service compare karega k8s pods se
