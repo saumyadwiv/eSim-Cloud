@@ -26,20 +26,23 @@ RUN curl -fSL https://github.com/imr/ngspice/archive/ngspice-$NGSPICE_VERSION.ta
 FROM alpine:3.14
 
 # Install python and minimal runtime libs for ngspice
-RUN apk add --no-cache python3 libstdc++
+RUN apk add --no-cache python3 py3-pip libstdc++
 
 COPY --from=builder /usr/local/bin/ngspice /usr/local/bin/ngspice
 COPY --from=builder /usr/local/share/ngspice /usr/local/share/ngspice
 
 WORKDIR /app
-COPY simulate.py .
 
-# Create a non-root user for security
+COPY simulate.py .
+COPY app.py .
+
+RUN pip3 install --no-cache-dir fastapi uvicorn
+
 RUN adduser -D simuser && \
     mkdir -p /tmp/simulation_run && \
     chown simuser:simuser /tmp/simulation_run
 
 USER simuser
 
-# Default command if no arguments are provided
-ENTRYPOINT ["python3", "simulate.py"]
+ENTRYPOINT ["uvicorn"]
+CMD ["app:app", "--host", "0.0.0.0", "--port", "5000"]

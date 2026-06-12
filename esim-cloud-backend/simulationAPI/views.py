@@ -19,6 +19,7 @@ import time
 import math
 import os
 import logging
+import requests as http_requests
 
 
 logger = logging.getLogger(__name__)
@@ -94,6 +95,18 @@ class NetlistUploader(APIView):
                 serializer.data['task_id'], serializer.data['file'][0]['file'],
                 request)
             task_id = serializer.data['task_id']
+            try:
+                user_id = str(request.user.id) if request.user.is_authenticated else str(task_id)[:8]
+                http_requests.post(
+                    'http://host.docker.internal:8001/session/start',
+                    json={'user_id': user_id},
+                    timeout=5
+                )
+                logger.info(f"Session created for user {user_id}")
+
+            except Exception as e:
+                 logger.warning(f"Session manager unavailable: {e}")
+        
             if(TIME_LIMIT == 0):
                 celery_task = process_task.apply_async(
                     kwargs={'task_id': str(task_id)}, task_id=str(task_id)

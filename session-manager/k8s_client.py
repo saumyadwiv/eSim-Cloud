@@ -45,12 +45,13 @@ def create_simulation_pod(user_id: str, namespace: str = "default"):
         "spec": {
             "containers": [{
                 "name": "ngspice",
-                "image": "esim-ngspice:latest",  # Person 1 ka image
+                "image": "esim-ngspice:latest",
+                "imagePullPolicy": "Never",
                 "ports": [{"containerPort": 5000}],
                 "resources": {
                     "limits": {
-                        "cpu": "500m",      # Max 0.5 CPU per user
-                        "memory": "256Mi"   # Max 256MB RAM per user
+                        "cpu": "500m",
+                        "memory": "256Mi"
                     },
                     "requests": {
                         "cpu": "100m",
