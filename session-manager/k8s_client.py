@@ -6,20 +6,19 @@ MOCK_MODE = os.getenv("MOCK_K8S", "false").lower() == "true"
 
 def load_k8s_config():
     try:
-        # Pehle in-cluster try karo (production)
+        # Pehle try karega agar in-cluster (K8s ke andar) chal raha hai
         config.load_incluster_config()
-    except:
+        return True
+    except config.ConfigException:
         try:
-            # Phir local kubeconfig try karo
-            config.load_kube_config()
-        except:
-            # Local dev mein K8s nahi hai — mock mode
-            print("WARNING: No K8s config found, running in mock mode")
+            # Agar local container mein hai, toh humari copy ki hui flat-config use karega
+            config.load_kube_config(config_file="/root/.kube/config")
+            print("✅ K8s config loaded successfully from /root/.kube/config")
+            return True
+        except Exception as e:
+            print(f"WARNING: No K8s config found, running in mock mode. Error: {e}")
             return False
-    return True
-
-
-# load_k8s_config()
+        # load_k8s_config()
 # v1 = client.CoreV1Api()
 
 

@@ -19,7 +19,7 @@ import time
 import math
 import os
 import logging
-
+import requests  # ✅ NEW
 
 logger = logging.getLogger(__name__)
 
@@ -65,36 +65,53 @@ def saveNetlistDB(task_id, filepath, request):
 
 
 class NetlistUploader(APIView):
-    '''
-    API for NetlistUpload
-
-    Requires a multipart/form-data  POST Request with netlist file in the
-    'file' parameter
-    '''
     permission_classes = (AllowAny,)
     parser_classes = (MultiPartParser, FormParser,)
 
     def post(self, request, *args, **kwargs):
         logger.info('Got POST for netlist upload: ')
         logger.info(request.data)
+
+        # ✅ NEW: User ID nikalo
+        if request.user.is_authenticated:
+            user_id = str(request.user.username)  # username use karo — unique hota hai
+        else:
+            user_id = request.META.get('REMOTE_ADDR', 'anonymous').replace('.', '')
+
+        # ✅ NEW: Session Manager ko call karo — K8s pod create hoga
+        try:
+            session_manager_url = getattr(
+                settings, 'SESSION_MANAGER_URL', 'http://localhost:8002'
+            )
+            session_response = requests.post(
+                f"{session_manager_url}/session/start",
+                json={"user_id": user_id, "namespace": "default"},
+                timeout=10
+            )
+            if session_response.status_code == 200:
+                pod_info = session_response.json()
+                logger.info(f"✅ Pod created/found: {pod_info['pod_name']} for user: {user_id}")
+            else:
+                logger.error(f"❌ Session manager error: {session_response.text}")
+        except Exception as e:
+            logger.error(f"❌ Session manager unreachable: {e}")
+            # Session manager fail hone par bhi simulation chalne do
+
+        # Baaki code same
         serializer = TaskSerializer(data=request.data, context={'view': self})
 
         limits = Limit.objects.all()
         TIME_LIMIT = 0
         if limits.exists():
             TIME_LIMIT = Limit.objects.all()[0].timeLimit
-        # if timeLimit.objects.count() != 0:
-        #     TIME_LIMIT = timeLimit.objects.all()[0]
-        #     print('NOT NONE')
-        # else:
-        #     print('NONE')
+
         if serializer.is_valid():
             serializer.save()
             saveNetlistDB(
                 serializer.data['task_id'], serializer.data['file'][0]['file'],
                 request)
             task_id = serializer.data['task_id']
-            if(TIME_LIMIT == 0):
+            if TIME_LIMIT == 0:
                 celery_task = process_task.apply_async(
                     kwargs={'task_id': str(task_id)}, task_id=str(task_id)
                 )
@@ -113,18 +130,10 @@ class NetlistUploader(APIView):
 
 
 class CeleryResultView(APIView):
-    """
-
-    Returns Simulation results for 'task_id' provided after
-    uploading the netlist
-    /api/task/<uuid>
-
-    """
     permission_classes = (AllowAny,)
     methods = ['GET']
 
     def get(self, request, task_id):
-
         if isinstance(task_id, uuid.UUID):
             celery_result = AsyncResult(str(task_id))
             response_data = {
@@ -143,41 +152,30 @@ class CeleryResultView(APIView):
 
 
 class SimulationResults(APIView):
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, save_id, sim, version, branch):
-        if sim is None:
-            sims = simulation.objects.filter(
-                owner=self.request.user, schematic__save_id=save_id,
-                schematic__version=version, schematic__branch=branch
-            )
-        else:
-            sims = simulation.objects.filter(
-                owner=self.request.user, schematic__save_id=save_id,
-                schematic__version=version, schematic__branch=branch
-            )
+        sims = simulation.objects.filter(
+            owner=self.request.user, schematic__save_id=save_id,
+            schematic__version=version, schematic__branch=branch
+        )
         serialized = simulationSerializer(sims, many=True)
         return Response(serialized.data, status=status.HTTP_200_OK)
 
 
 class SimulationResultsForLTI(APIView):
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, save_id, sim, version, branch):
-        if sim is None:
-            sims = simulation.objects.filter(
-                owner=self.request.user, schematic__save_id=save_id
-            )
-        else:
-            sims = simulation.objects.filter(
-                owner=self.request.user, schematic__save_id=save_id
-            )
+        sims = simulation.objects.filter(
+            owner=self.request.user, schematic__save_id=save_id
+        )
         serialized = simulationSerializer(sims, many=True)
         return Response(serialized.data, status=status.HTTP_200_OK)
 
 
 class SimulationResultsFromSimulator(APIView):
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request, sim):
         sims = simulation.objects.filter(
@@ -187,7 +185,7 @@ class SimulationResultsFromSimulator(APIView):
 
 
 class GetLTISimResults(APIView):
-    permission_classes = (AllowAny, )
+    permission_classes = (AllowAny,)
 
     def get(self, request, lti_id):
         try:
@@ -199,12 +197,12 @@ class GetLTISimResults(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 
-@ celery.signals.task_prerun.connect
+@celery.signals.task_prerun.connect
 def statsd_task_prerun(task_id, **kwargs):
     current_task.start_time = time.time()
 
 
-@ celery.signals.task_postrun.connect
+@celery.signals.task_postrun.connect
 def statsd_task_postrun(task_id, **kwargs):
     runtime = time.time() - current_task.start_time
     runtime = math.ceil(runtime)

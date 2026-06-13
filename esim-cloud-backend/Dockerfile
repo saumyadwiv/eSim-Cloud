@@ -4,6 +4,7 @@ ENV PYTHONUNBUFFERED 1
 ENV PYTHONDONTWRITEBYTECODE 1
 
 RUN mkdir /code
+RUN apk add --no-cache cairo cairo-dev pango pango-dev gdk-pixbuf
 WORKDIR /code
 
 ENV NGSPICE_VERSION 31

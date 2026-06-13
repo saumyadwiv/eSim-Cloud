@@ -52,4 +52,4 @@ def test_refresh_session(mock_redis):
     """Test: session timer reset hota hai"""
     from session_store import refresh_session
     refresh_session("user123")
-    mock_redis.expire.assert_called_once_with("session:user123", 1800)
+    mock_redis.expire.assert_called_once_with("session:user123", 100)

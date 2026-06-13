@@ -60,7 +60,11 @@ services:
   django:
     image: "docker.pkg.github.com/frg-fossee/esim-cloud/django:dev"
     build: ./esim-cloud-backend/
-    command: "python3 manage.py runserver 0.0.0.0:8000"
+    command:  >
+      sh -c "python3 manage.py migrate &&
+         python3 manage.py load_default_libs --username=admin --location=kicad-symbols/default --default &&
+         python3 manage.py load_default_libs --username=admin --location=kicad-symbols/additional &&
+         python3 manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
     volumes:
@@ -122,7 +126,21 @@ services:
       - postgres_vol:/var/lib/postgresql/data/
     env_file:
       - .env
-
+  session-manager:                          # ← YEH ADD KAR
+      build: ./session-manager/
+      ports:
+        - "8001:8001"
+      environment:
+        - REDIS_HOST=redis
+        - REDIS_PORT=6379
+        - MOCK_K8S=${MOCK_K8S:-false}
+      depends_on:
+        - redis
+      volumes:
+        - ./session-manager:/code
+        # - $HOME/.kube:/root/.kube:ro
+      env_file:
+        - .env
 volumes:
   run_vol:
     driver_opts:
