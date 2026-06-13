@@ -19,7 +19,7 @@ import time
 import math
 import os
 import logging
-import requests  # ✅ NEW
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -111,8 +111,7 @@ class NetlistUploader(APIView):
                 serializer.data['task_id'], serializer.data['file'][0]['file'],
                 request)
             task_id = serializer.data['task_id']
-            if TIME_LIMIT == 0:
-                celery_task = process_task.apply_async(
+            if TIME_LIMIT == 0:                celery_task = process_task.apply_async(
                     kwargs={'task_id': str(task_id)}, task_id=str(task_id)
                 )
             else:

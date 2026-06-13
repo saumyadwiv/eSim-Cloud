@@ -104,12 +104,14 @@ services:
         - db
 
   redis:
-      image: "redis:${TAG_REDIS}"
-      environment:
-        - ALLOW_EMPTY_PASSWORD=yes
-        - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
-      volumes:
-          - ./redis_data:/data
+    image: "redis:${TAG_REDIS}"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    ports:
+      - "6379:6379"
+    volumes:
+        - ./redis_data:/data
 
   # Uncomment this and Change appropriate env variables to switch to mysql
   # db:
