@@ -21,6 +21,9 @@ import { makeStyles } from '@material-ui/core/styles'
 import ExpandLess from '@material-ui/icons/ExpandLess'
 import ExpandMore from '@material-ui/icons/ExpandMore'
 import CloseIcon from '@material-ui/icons/Close'
+import AddIcon from '@material-ui/icons/Add'
+import CustomComponentDrawer from '../ModelBuilder/CustomComponentDrawer'
+import MyComponents from '../ModelBuilder/MyComponents'
 
 import './Helper/SchematicEditor.css'
 import { useDispatch, useSelector } from 'react-redux'
@@ -39,6 +42,21 @@ const useStyles = makeStyles((theme) => ({
   },
   head: {
     marginRight: 'auto'
+  },
+  tools: {
+    padding: theme.spacing(1),
+    color: theme.palette.text.primary,
+    '& .MuiSvgIcon-root': {
+      color: theme.palette.text.primary
+    }
+  },
+  sectionLabel: {
+    backgroundColor: theme.palette.type === 'dark' ? theme.palette.grey[800] : '#e8e8e8',
+    color: theme.palette.text.primary
+  },
+  sidebarTitle: {
+    margin: '5px',
+    color: theme.palette.text.primary
   }
 }))
 
@@ -68,6 +86,8 @@ export default function ComponentSidebar ({ compRef, ltiSimResult, setLtiSimResu
   const [loading, setLoading] = useState(false)
   const [favourite, setFavourite] = useState(null)
   const [favOpen, setFavOpen] = useState(false)
+  const [customOpen, setCustomOpen] = useState(false)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const [searchedComponentList, setSearchedComponents] = useState([])
   const [searchOption, setSearchOption] = useState('NAME')
@@ -226,11 +246,17 @@ export default function ComponentSidebar ({ compRef, ltiSimResult, setLtiSimResu
       </Hidden>
 
       <div style={isSimulate ? { display: 'none' } : {}}>
+        <CustomComponentDrawer open={customOpen} onClose={() => { setCustomOpen(false); setRefreshKey((k) => k + 1) }} />
         {/* Display List of categorized components */}
         <List>
           <ListItem button>
-            <h2 style={{ margin: '5px' }}>Components List</h2>
+            <h2 className={classes.sidebarTitle}>Components List</h2>
           </ListItem>
+          <ListItem button onClick={() => setCustomOpen(true)} divider>
+            <ListItemIcon><AddIcon /></ListItemIcon>
+            <span className={classes.head}>Add Custom Component</span>
+          </ListItem>
+          <MyComponents refreshKey={refreshKey} />
           <ListItem>
 
             <TextField
@@ -346,7 +372,7 @@ export default function ComponentSidebar ({ compRef, ltiSimResult, setLtiSimResu
             <>
               <div style={!def ? { display: 'none' } : {}}>
                 <Divider />
-                <ListItem dense divider style={{ backgroundColor: '#e8e8e8' }}>
+                <ListItem dense divider className={classes.sectionLabel}>
                   <span>DEFAULT</span>
                 </ListItem>
                 <Divider />
@@ -364,7 +390,7 @@ export default function ComponentSidebar ({ compRef, ltiSimResult, setLtiSimResu
                 )}
               </div>
               <div style={!additional ? { display: 'none' } : {}}>
-                <ListItem dense divider style={{ backgroundColor: '#e8e8e8' }}>
+                <ListItem dense divider className={classes.sectionLabel}>
                   <span className={classes.head}>ADDITIONAL</span>
                 </ListItem>
                 { libraries.sort(function (a, b) {
@@ -381,7 +407,7 @@ export default function ComponentSidebar ({ compRef, ltiSimResult, setLtiSimResu
                 )}
               </div>
               <div style={!uploaded ? { display: 'none' } : {}}>
-                <ListItem dense divider style={{ backgroundColor: '#e8e8e8' }}>
+                <ListItem dense divider className={classes.sectionLabel}>
                   <span className={classes.head}>UPLOADED</span>
                 </ListItem>
                 { libraries.sort(function (a, b) {
@@ -406,7 +432,7 @@ export default function ComponentSidebar ({ compRef, ltiSimResult, setLtiSimResu
         {/* Display simulation modes parameters on left side pane */}
         <List>
           <ListItem button divider>
-            <h2 style={{ margin: '5px auto 5px 5px' }}>Simulation Modes</h2>
+            <h2 className={classes.sidebarTitle}>Simulation Modes</h2>
             <Tooltip title="close">
               <IconButton color="inherit" className={classes.tools} size="small" onClick={() => { dispatch(toggleSimulate()) }}>
                 <CloseIcon fontSize="small" />
