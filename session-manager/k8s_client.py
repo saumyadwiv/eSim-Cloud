@@ -46,6 +46,7 @@ def create_simulation_pod(user_id: str, namespace: str = "default"):
             "containers": [{
                 "name": "ngspice",
                 "image": "esim-ngspice:latest",  # Person 1 ka image
+                "imagePullPolicy": "IfNotPresent",
                 "ports": [{"containerPort": 5000}],
                 "resources": {
                     "limits": {
@@ -121,3 +122,4 @@ def list_simulation_pods(namespace: str = "default"):
         label_selector="app=esim-simulation"
     )
     return [pod.metadata.name for pod in pods.items]
+

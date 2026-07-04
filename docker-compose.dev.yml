@@ -138,3 +138,5 @@ volumes:
     driver_opts:
       type: tmpfs
       device: tmpfs
+
+  postgres_vol:

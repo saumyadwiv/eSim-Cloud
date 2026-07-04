@@ -2,7 +2,7 @@ import asyncio
 import httpx
 import os
 from session_store import get_all_sessions, delete_session
-from k8s_client import delete_simulation_pod, get_pod_status
+from k8s_client import delete_simulation_pod, get_pod_status, list_simulation_pods
 
 SESSION_MANAGER_URL = os.getenv(
     "SESSION_MANAGER_URL",
@@ -32,6 +32,16 @@ async def cleanup_idle_sessions():
             delete_simulation_pod(pod_name, namespace)
             delete_session(user_id)
             print(f"Cleaned up session for user: {user_id}")
+
+    # NEW: orphaned pods — pod exists in k8s but Redis session already expired
+    active_pod_names = {s["pod_name"] for s in sessions}
+    all_pod_names = list_simulation_pods()
+
+    for pod_name in all_pod_names:
+        if pod_name not in active_pod_names:
+            print(f"Cleaning up orphaned pod (no Redis session): {pod_name}")
+            delete_simulation_pod(pod_name, "default")
+
 
 
 async def run_cleanup_loop():
